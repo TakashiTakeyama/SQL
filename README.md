@@ -96,5 +96,98 @@ FROM shohin;
 SELECT shohin_id AS id,
 shohin_mei AS namae,
 shiire_tanka AS tanka
+別名には日本語も使うことができる。
+shohin_id AS "商品ID",
+shohin_mei AS "商品名"
 FROM Shohin;
+```
+```
+SELECT '商品' AS mojiretsu, 38 AS kazu, '2009-02-24' AS hizuke,
+shohin_id, shohin_mei
+FROM shohin;
+SQL文の中に文字列や日付の定数を書く場合には、必ずシングルクウォーテーションで囲む。
+```
+### 重複するデータを省く時DISTINCTを使う。
+```
+SELECT DISTINCT shohin_bunrui
+FROM shohin;
+DISTINCTを使ったときはNULLも一種類のデータとして扱われる。
+複数の行にある場合はやはり一種類として扱われる。
+先頭の列名の前にしか書けない。
+```
+### where句による行の選択
+```
+SELECT <列名>
+FORM <テーブル名>
+WHERE <条件式>;
+SELECT shohin_mei, shohin_bunrui
+FROM shohin
+WHERE shohin_bunrui = '衣服';
+where句で条件にあう行をまず選択し、その後にselect句で指定された列を実行する。
+where句は必ずFROM句の直後に書く。
+-- 一行コメントの書き方
+/*複数行のコメントの書き方*/
+```
+### SQL文には計算式もかける
+```
+SELECT shohin_mei, hanbai_tanka,
+hanbai_tanka * 2 AS "hanbai_tanka_x2"
+FROM Shohin;
+NULLを含んだ演算子は問答無用でNULLになる。
+SELECT shohin_mei, shohin_bunrui
+FROM Shohin
+WHERE hanbai_tanka = 500;
+-- hanbai_tanka列が500ではない行
+WHERE hanbai_tanka <> 500,;
+WHERE torokubi < '2009-09-27';
+必ず不等号が右側イコールが左側
+WHERE hanbai_tanka - shiire_tanka >= 500;
+```
+
+```
+-- DDL: テーブル作成
+CREATE TABLE Chars
+(chr CHAR(3) NOT NULL,
+PRIMARY KEY (chr));
+
+-- DML: データ登録
+INSERT INTO Chars VALUES ('1');
+INSERT INTO Chars VALUES ('2');
+INSERT INTO Chars VALUES ('3');
+INSERT INTO Chars VALUES ('10');
+INSERT INTO Chars VALUES ('11');
+INSERT INTO Chars VALUES ('222');
+これを辞書式順序で並べると
+1
+10
+11
+2
+222
+3
+になるよって結果が222, 3しかデータを取れなかった。
+文字列型の順序の原則は辞書式、数値の大小と混同してはいけない。
+COMMIT;
+SQLにはNULLかどうかを判別するための専用の演算子IS NULLが用意されている。
+SELECT shohin_mei, shiire_tanka
+FROM Shohin
+WHERE shiire_tanka IS NULL;
+NULL以外を選択したい場合
+WHERE shiire_tanka IS NOT NULL;
+条件を否定するのがNOT演算子だが無理に否定することはない。
+```
+### AND演算子OR演算子
+```
+SELECT shohin_mei, shiire_tanka
+FROM shohin
+WHERE shohin_bunrui = 'キッチン用品'
+AND hanbai_tanka >= 3000;
+OR hanbai_tanka >= 3000;
+OR演算子よりAND演算子の方が優先される
+条件に優劣を付けない場合は()をつける。
+SELECT shohin_mei, shiire_tanka
+FROM shohin
+WHERE shohin_bunrui = '事務用品'
+AND (torokubi = '2009-09-11'
+OR torokubi = '2009-09-20');
+AND演算子が行う論理演算は論理積、OR演算子が行う論理演算は論理和と言う。
 ```
