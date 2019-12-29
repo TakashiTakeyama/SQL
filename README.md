@@ -190,4 +190,114 @@ WHERE shohin_bunrui = '事務用品'
 AND (torokubi = '2009-09-11'
 OR torokubi = '2009-09-20');
 AND演算子が行う論理演算は論理積、OR演算子が行う論理演算は論理和と言う。
+SQLは3値論理と呼ばれる真でも偽でもない不明(Unkown)がある。
+NULLが存在する場合条件判定は複雑になり見通しも悪くなるので
+なるべくNOT NULL制約をつけることが共通認識となっている。
 ```
+### 練習問題2
+```
+SELECT shohin_mei, torokubi
+FROM Shohin
+WHERE torokubi > '2009-04-28'; 
+SELECT *
+FROM Shohin
+WHERE Shiire_tanka = NULL;
+SELECT *
+FROM Shohin
+WHERE Shiire_tanka <> NULL;
+SELECT *
+FROM Shohin
+WHERE Shiire_tanka > NULL;
+-- NULLに対して論理演算子は使えない。
+SELECT shohin_mei, hanbai_tanka, shiire_tanka 
+FROM Shohin
+WHERE (hanbai_tanka - shiire_tanka) >= 500;
+SELECT shohin_mei, hanbai_tanka, shiire_tanka
+FROM Shohin
+WHERE (shiire_tanka + 500) <= hanbai_tanka;
+SELECT shohin_mei, shohin_bunrui, (hanbai_tanka * 0.9) - shiire_tanka AS rieki
+FROM Shohin
+WHERE (hanbai_tanka * 0.9) - shiire_tanka > 100;
+```
+```
+-- 集計用の関数を集約関数、集合関数と呼ぶ
+SELECT COUNT(*)
+FROM shohin;
+SELECT COUNT(shiire_tanka)
+FROM Shohin;
+-- NULLの行はカウントされない
+SELECT COUNT(*), COUNT(shohin_mei)
+FROM Shohin;
+SELECT SUM(hanbai_tanka)
+FROM shohin;
+SELECT SUM(hanbai_tanka), SUM(shiire_tanka)
+FROM shohin;
+-- 集約関数はNULLを除外する、しかしCOUNT(*)は例外的にNULLを除外しない。SELECT AVG(hanbai_tanka)
+FROM shohin;
+SELECT MAX(hanbai_tanka), MIN(shiire_tanka)
+FROM shohin;
+SELECT MAX(torokubi), MIN(torokubi)
+FROM shohin;
+-- MAX/MIN関数はほとんど全てのデータ型に適用できる
+SELECT COUNT(DISTINCT shohin_bunrui)
+FROM Shohin;
+-- DISTINCT は必ず()の中に書かなくてはいけない。
+```
+### グループ分けを行う GROUP BY
+```
+SELECT shohin_bunrui, COUNT(*)
+FROM shohin
+GROUP BY shohin_bunrui;
+-- GROUP BY句に指定する列の事を集約キーやグループ化列と呼ぶ。
+複数の列をカンマ区切りで指定する事ができる。
+1. SELECT-> 2.FROM-> 3.WHERE-> 4.GROUP BY　句の入れ替えはできない。
+集約キーにNULLが含まれる場合、結果にも不明行として出力される。
+SELECT <列名1>,<列名2>,<列名3>
+FROM <テーブル名>
+WHERE
+GROUP BY <列名1>,<列名2>,<列名3>;
+SELECT shiire_tanka, COUNT(*)
+FROM Shohin
+WHERE shohin_bunrui = '衣服'
+GROUP BY shiire_tanka;
+実行順序 FROM-> WHERE-> GROUP BY-> SELECT
+GROUP BY句を使うときは、SELECT句に集約キー以外の列名を付けない。
+GROUP BY句を使った結果の順番はランダム、ソートはされない。
+集約関数をかける場所SELECT句とHAVING句（とORDER BY句）だけ。
+```
+### HAVING句
+```
+-- WHERE句はあくまで「レコード」に対してのみしか条件を指定できない。
+HAVING句はGROUP BYの後ろに書く
+SELECT shohin_bunrui, COUNT(*)
+FROM shohin
+GROUP BY shohin_bunrui
+HAVING COUNT(*) = 2;
+SELECT shohin_bunrui, AVG(hanbai_tanka)
+FROM shohin
+GROUP BY shohin_bunrui
+HAVING AVG(hanbai_tanka) >= 2500;
+HAVING句でかける要素
+定数
+集約関数
+集約キー　= カラム名
+GROUP BY句で指定した列名(つまり集約キー)
+HAVING句の使い方を考えるときは「一度集約が終わった段階のテーブルを出発点にしている。GROUP BYを使ったあとのSELECT句を考える時にも当てはまる。
+集約キー に対する条件はWHERE句に書いた方が良い。
+WHERE句 => ただの行に対する条件
+HAVING => グループ化に対する条件
+WHERE句はRDBMSの内部では行を絞り込んでからソートを行うので処理速度が早くなる
+また、index[索引]を作成する事で処理を大幅に高速化することができる。
+ORDER BY句はいつどんな時でも、SELECT句の後ろに書く必要がある、ソートを行うから、別名: ソートキーと呼ばれる。
+ソートキーにNULLが含まれていた場合、先頭か末尾にまとめられる。
+ORDER BY句では、SELECT句で付けた別名を利用できる。
+ORDER BY句ではテーブルに存在する列であればSELECT句に含まれていない列でも指定できる。
+ORDER BY句では、列番号は使わない。
+SELECT shohin_bunrui
+FROM Shohin
+WHERE torokubi > '2009-09-01'
+GROUP BY shohin_bunrui;
+SELECT shohin_bunrui, SUM(hanbai_tanka), SUM(shiire_tanka)
+FROM shohin
+GROUP BY shohin_bunrui
+HAVING SUM(hanbai_tanka) > SUM(shiire_tanka) * 1.5;
