@@ -301,3 +301,32 @@ SELECT shohin_bunrui, SUM(hanbai_tanka), SUM(shiire_tanka)
 FROM shohin
 GROUP BY shohin_bunrui
 HAVING SUM(hanbai_tanka) > SUM(shiire_tanka) * 1.5;
+
+SELECT torokubi
+FROM shohin
+order by torokubi;
+
+SELECT *
+  FROM Shohin
+ ORDER BY torokubi DESC, hanbai_tanka;
+ ```
+ ### データの更新
+ ```
+ CREATE TABLE ShohinIns
+ (shohin_id CHAR(4) NOT NULL,
+  shohin_mei VARCHAR(100) NOT NULL,
+  shohin_bunrui VARCHAR(32) NOT NULL,
+  hanbai_tanka INTEGER,
+  shiire_tanka INTEGER,
+  torokubi DATE,
+  PRIMARY KEY (shohin_id));
+
+INSERT INTO ShohinIns (shohin_id, shohin_mei, shohin_bunrui, hanbai_tanka, shiire_tanka, torokubi) VALUES ('0001', 'Tシャツ', '衣服', 1000, 500, '2009-09-20');
+INSERT INTO ShohinIns (shohin_id, shohin_mei, shohin_bunrui, hanbai_tanka, shiire_tanka, torokubi) VALUES ('0001', 'Tシャツ', '衣服', DEFAULT, 500, '2009-09-20');
+明示的にデフォルトを示す事でDEFAULT値を挿入できる。
+INSERT INTO ShohinIns VALUES ('0002, '穴あけパンチ', '事務用品', 500, 320, '2009-09-11');
+INSERT INTO ShohinIns VALUES ('0003, 'カッターシャツ', '衣服', 4000, 2800, NULL);
+INSERT INTO ShohinIns VALUES ('0004, '包丁', 'キッチン用品', 3000, 2800, '2009-09-20');
+INSERT INTO ShohinIns VALUES ('0002, '穴あけパンチ', '事務用品', 500, 320, '2009-09-11');
+INSERT INTO ShohinIns VALUES ('0002, '穴あけパンチ', '事務用品', 500, 320, '2009-09-11');
+明示的にデフォルトを示す事でDEFAULT値を挿入できる。
