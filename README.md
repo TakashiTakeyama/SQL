@@ -324,9 +324,63 @@ SELECT *
 INSERT INTO ShohinIns (shohin_id, shohin_mei, shohin_bunrui, hanbai_tanka, shiire_tanka, torokubi) VALUES ('0001', 'Tシャツ', '衣服', 1000, 500, '2009-09-20');
 INSERT INTO ShohinIns (shohin_id, shohin_mei, shohin_bunrui, hanbai_tanka, shiire_tanka, torokubi) VALUES ('0001', 'Tシャツ', '衣服', DEFAULT, 500, '2009-09-20');
 明示的にデフォルトを示す事でDEFAULT値を挿入できる。
-INSERT INTO ShohinIns VALUES ('0002, '穴あけパンチ', '事務用品', 500, 320, '2009-09-11');
-INSERT INTO ShohinIns VALUES ('0003, 'カッターシャツ', '衣服', 4000, 2800, NULL);
-INSERT INTO ShohinIns VALUES ('0004, '包丁', 'キッチン用品', 3000, 2800, '2009-09-20');
+INSERT INTO ShohinIns VALUES ('0002', '穴あけパンチ', '事務用品', 500, 320, '2009-09-11');
+INSERT INTO ShohinIns VALUES ('0003', 'カッターシャツ', '衣服', 4000, 2800, NULL);
+INSERT INTO ShohinIns VALUES ('0004', '包丁', 'キッチン用品', 3000, 2800, '2009-09-20');
 INSERT INTO ShohinIns VALUES ('0002, '穴あけパンチ', '事務用品', 500, 320, '2009-09-11');
 INSERT INTO ShohinIns VALUES ('0002, '穴あけパンチ', '事務用品', 500, 320, '2009-09-11');
 明示的にデフォルトを示す事でDEFAULT値を挿入できる。
+INSERT INTO ShohinIns VALUES('0005','圧力鍋', 'キッチン用品', 6800, 5000, '2009-01-15');
+テーブルにdefault値を設定する
+ALTAER TABLE ShoinIns ALTER hanbai_tanka SET DEFAULT 0;
+CREATE TABLE ShohinCopy(
+  shohin_id CHAR(4) NOT NULL,
+  shohin_mei VARCHAR(100) NOT NULL,
+  shohin_bunrui VARCHAR(32) NOT NULL,
+  hanbai_tanka INTEGER,
+  shiire_tanka INTEGER,
+  torokubi DATE,
+  PRIMARY KEY (shohin_id)
+);
+
+-- 商品テーブルのデータを商品コピーテーブルへ「コピー」
+INSERT INTO ShohinCopy (shohin_id, shohin_mei, shohin_bunrui, hanbai_tanka, shiire_tanka, torokubi)
+SELECT shohin_id, shohin_mei, shohin_bunrui, hanbai_tanka, shiire_tanka, torokubi
+FROM Shohin;
+CREATE TABLE ShohinBunrui
+(shohin_bunrui VARCHAR(32) NOT NULL,
+ sum_hanbai_tanka INTEGER,
+ sum_shiire_tanka INTEGER,
+ PRIMARY KEY(shohin_bunrui));
+--テーブルを作成し、既存のテーブルからコピーする
+INSERT INTO ShohinBunrui (shohin_bunrui, sum_hanbai_tanka, sum_shiire_tanka)
+SELECT shohin_bunrui, SUM(hanbai_tanka), SUM(shiire_tanka)
+FROM Shohin
+GROUP BY shohin_bunrui;
+INSERT文内のSELECT文ではWHERE句やGROUP BY句など、どんなSQL構文も使うことができる。
+--探索型DELETE
+TRUNCATE<テーブル名>;必ずテーブルを削除する。
+DELETE文より処理が早いため実行時間を短縮できる。
+DML文 DataManipulation Language　データ操作言語
+DDL文 DataDefiniton Language データ定義言語
+DDLだとRollbackができないOracleでは注意が必要、暗黙的にcommitされる。
+--UPDATE文の基本構文
+UPDATE <テーブル名>
+SET <列名> = <式>;
+--torokubiを統一する
+UPDATE Shohin
+SET torokubi = '2009-10-10';
+NULLだった場合も値は更新される
+UPDATE Shohin
+SET hanbai_tanka = hanbai_tanka * 10
+WHERE shohin_bunrui = 'キッチン用品';
+NULLクリア: 列をNULLで更新すること
+UPDATE Shohin
+SET torokubi = NULL
+WHERE shohin_id = '0008';
+UPDATE Shohin
+--二つのUPDATEを一つにまとめることもできる
+--二度もUPDATE文を実行するのは無駄なため
+SET habai_tanka = hanbai_tanka * 10
+SET shire_tanka = shiire_tanka / 2
+WHERE shohin_bunrui = 'キッチン用品';
