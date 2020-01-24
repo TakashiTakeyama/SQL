@@ -380,7 +380,180 @@ SET torokubi = NULL
 WHERE shohin_id = '0008';
 UPDATE Shohin
 --二つのUPDATEを一つにまとめることもできる
---二度もUPDATE文を実行するのは無駄なため
+--二度もUPDATE文を実行するのは無駄なため」」
 SET habai_tanka = hanbai_tanka * 10
 SET shire_tanka = shiire_tanka / 2
 WHERE shohin_bunrui = 'キッチン用品';
+UPDATE Shohin
+SET (hanbai_tanka, shiire_tanka) = (hanbai_tanka * 10, shiire_tanka /2)
+WHERE Shohin_bunrui = 'キッチン用品';
+```
+### トランザクション
+```
+-- セットで実行されるべき一つ以上の更新処理の集まりのこと
+トランザクション構文
+トランザクション開始文;
+DML文①
+DML文②
+DML文③
+トランザクション終了文(COMMIT または ROLLBACK);
+DBMSによってトランザクション開始文は異なる
+SQL Server, PostgreSQL
+BEGIN TRANSACTION
+MySQL
+START TRANSACTION
+Oracle, DB2
+ない
+COMMIT トランザクションを終了するコマンド
+ROLLBACK トランザクションに含まれていた処理による変更を全て破棄してトランザクションを終了するコマンド
+
+トランザクションには守るべき四つの大事な約束事が標準規格によって取り決められているそれをACID特性という。
+Atomicty原子性: トランザクションが終わった時に、そこに含まれていた更新処理は、全て実行されるか、または全て実行されない状態で終わることを保証する性質の事
+COMMITかROLLBACKか
+Consistency一貫性: トランザクションい含まれる処理は、データベースに予め設定された制約、例えば主キーやNOT NULL制約を満たす、という性質。
+整合性 = 一貫性
+Isolation独立性: トランザクション同士が互いに干渉を受けないことを保証する性質です。
+Durability永続性: これは耐久性と言っても良いのですが、トランザクションが(コミットにせよロールバックにせよ)終了したら、その時点でのデータベースの状態が保存されることを保証する性質です。
+この永続性を保証する方法は、実装によって異なるが一番ポピュラーなものは、トランザクションの実行記録をディスクなどに保存しておき(このような実行記録をログという)、障害が起きた際このログを使って障害前の状態に復旧するという方法。
+UPDATE ShohinSaeki
+SET hanbai_tanka = habai_tanka - 1000;
+SET saeki = shiire_tanka - hanbai_tanka;
+WHERE hanbai_mei = 'カッターシャツ';
+CREATE TABLE ShohinSaeki
+(shohin_id    CHAR(4)       NOT NULL,
+ shohin_mei   VARCHAR(100)  NOT NULL,
+ hanbai_tanka INTEGER,
+ shiire_tanka INTEGER,
+ saeki        INTEGER,
+ PRIMARY KEY(shohin_id));
+ INSERT INTO ShohinSaeki VALUES ('0001', 'Tシャツ', 1000, 500, 500);
+ INSERT INTO ShohinSaeki (shohin_id, shohin_mei, hanbai_tanka, shiire_tanka, saeki)
+ SELECT shohin_id, shohin_mei, hanbai_tanka, shiire_tanka, hanbai_tanka - shiire_tanka
+ FROM Shohin;
+
+ UPDATE ShohinSaeki
+ SET hanbai_tanka = 3000, saeki = shiire_tanka - hanbai_tanka
+ --複数の更新を行うときはカンマで区切る。
+ WHERE shohin_mei = 'カッターシャツ';
+```
+### 複雑な問合せ
+```
+-- viewについて
+SQLの観点から見ると"テーブルと同じもの"
+SELECT文を組み立てる際にはテーブルとビューの違いは気にしなくても良い
+実際のデータを保存しているかどうかが違う
+viewのメリット: 記憶装置を使わないので要領を節約できる。
+よく使うSELECT文は使いまわせるため便利である。
+
+--ビュー文の書き方
+CREATE VIEW ビュー名 (<ビューの列名1>, <ビューの列名2>)
+AS
+<SELECT文>
+
+CREATE VIEW ShohinSum (shohin_bunrui, cnt_shohin)
+AS
+SELECT Shohin_bunrui, COUNT(*)
+FROM Shohin
+GROUP BY shohin_bunrui;
+
+ビューはテーブルと同じくFROM句に書くことができる
+SELECT shohin_bunrui, cnt_shohin
+FROM ShohinSum;
+
+ビューに対する検索
+1: 最初に、ビューに定義されたSELECT文が実行され、
+2: その結果にたいして、ビューをFROM句に指定したSELECT文が実行される
+つまりビューに対する検索はでは、常に２つ以上のSELECT文が実行される
+ビューの上にビューを重ねる多段ビューを作成することも可能
+
+CREATE VIEW ShohinSumJim (shohin_bunrui, cnt_shohin)
+AS
+SELECT shohin_bunrui, cnt_shohin
+FROM ShohinSum
+WHERE shohin_bunrui = '事務用品';
+しかしなるべく多段ビューを避けるパフォーマンスの低下を招くから
+
+ビュー定義の制限事項
+ビュー定義でORDER BY句は使えない
+なぜかというと行には順序が無いと定められているから。
+ビューに対する更新
+DISTINCT　行単位で重複したデータがまとめられる
+1: SELECT句にDISTINCTが含まれていない
+2: FROM句に含まれるテーブルが一つだけである
+3: GROUP BY句を使用していない
+4: HAVING句を使用してはいない
+ビューはあくまでテーブルから派生しているなので元のテーブルが変更されればビューのデータ内容も変更される。
+
+posgersqlの場合多段ビューの作成元となっているビューを削除する場合に、それに依存するビューが存在すると次のようなエラーになる。
+ERROR: 他のオブジェクトが依存しています。
+DETAIL: ・・・が・・・に依存しています。
+HINT: 依存しているオブジェクトも削除するにはDROP...CASCADEしてください。
+DROP VIEW ShohinJim CASCADE;
+
+サブクエリ: 使い捨てのビュー（SELECT文）viewと異なりselect文終了後に消去される。
+queryはselect文と同義
+サブクエリはFROM句のなかに書く先にそちらのselect文が実行されてその後に上のクエリが実行される。
+
+サブクエリの階層数には制限がないので幾つでも入れ子構造にすることができる。
+
+SELECT Shohin_bunrui, cnt_shohin
+FROM (SELECT * 
+        FROM (SELECT shohin_bunrui, COUNT(*) AS cnt_shohin
+                FROM Shohin
+                GROUP BY shohin_bunrui) AS ShohinSum
+                WHERE cnt_shohin = 4) AS ShohinSum2;
+
+サブクエリが深くなると見通しも悪くなるし、パフォーマンスも落ちるのでなるべく深くなることを防ぐ。
+ASは省略可能。
+スカラサブクエリ: スカラとは「単一の」という意味がある。
+サブクエリは複数行返す事もあるが、スカラサブクエリは「必ず一行一行だけの戻り値を返す」という制限をつけたサブクエリの事
+戻り値が単一というこうとはこれを使って条件式の比較演算子で評価させることができる。
+集約関数をWHERE句に書くことはできない。AVGとか
+
+SELECT shohin_id, shohin_mei, hanbai_tanka
+FROM Shohin
+--ここからしたのSELECT文がスカラサブクエリ
+WHERE hanbai_tanka > (SELECT AVG(hanbai_tanka)
+                      FROM Shohin);
+        
+基本的にスカラ値がかけるところにはどこにでもかける、つまり定数や列名を書くことのできる場所全てにかけるのでSELECT句でもGROUP BY句でもHAVING句でもORDER BY句でもほとんどあらゆる場所に書くことができる。
+HAVING句: GROUP BY句に対する条件式
+
+SELECT shohin_bunrui, AVG(hanbai_tanka)
+FROM Shohin
+GROUP BY shohin_bunrui
+HAVING AVG(hanbai_tanka) > (SELECT AVG(hanbai_tanka)
+                            FROM Shohin);
+
+相関サブクエリはテーブル全体ではなく、テーブルの一部のレコード集合に限定した比較をしたい場合に使う。
+SELECT shohin_bunrui, shohin_mei, hanbai_tanka
+FROM Shohin AS S1
+WHERE hanbai_tanka > (SELECT AVG(hanbai_tanka)
+                      FROM Shohin AS S2
+                      WHERE S1.shohin_bunrui = S2.shohin_bunrui
+                      GROUP BY shohin_bunrui);
+
+相関サブクエリを使うと、俗に「縛る（バインドする）」とか制限するとか行ったりする。
+今回の場合は商品分類で縛って「平均単価との比較を行っている」
+相関サブクエリもGROUP BYと同じくケーキを切り分けるような「集合」のカットのような機能を持っている。
+
+CREATE VIEW ViewReshu5_1 (shohin_mei, hanbai_tanka, torokubi)
+AS
+SELECT shohin_mei, hanbai_tanka, torokubi
+FROM Shohin
+WHERE hanbai_tanka <= 1000
+AND torokubi = '2009-9-20';
+
+SELECT shohin_id, shohin_mei, shohin_bunrui, hanbai_tanka, (SELECT AVG(hanbai_tanka) FROM shohin AS hanbai_tanka_all)
+FROM shohin;
+
+SELECT shohin_id,
+   shohin_mei,
+   shohin_bunrui,
+   hanbai_tanka, 
+   (SELECT AVG(hanbai_tanka) 
+   WHERE S1.shohin_bunrui = S2.shohin_bunrui FROM shohin AS S2
+   GROUP BY S1.shohin_bunruiAS hanbai_tanka_all
+FROM shohin AS S1;
+
+
