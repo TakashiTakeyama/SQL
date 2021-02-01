@@ -104,3 +104,48 @@ mysql> SELECT CONCAT('My', NULL, 'QL');
         -> NULL
 mysql> SELECT CONCAT(14.3);
         -> '14.3'
+
+select sum (出勤額) as 出勤額の合計
+from 家計簿
+
+select max (出金額) as 最大額
+from 家計簿
+
+insert into 家計簿集計表 (費用, 合計, 平均, 回数)
+select 費目, sum (出金額), avg (出金額), count (出金額)
+from 家計簿
+where 出金額 > 0
+group by (費目)
+
+select * sum (出費)
+from 家計簿
+group by 交際費, 給料, 水道光熱費, 交際費
+
+select 費目 sum (出金額) as 費目ごとの出金額合計
+from 家計簿
+where 出金額 > 0
+group by 費目
+
+/* having句は集計結果が終わった後に絞り込めるwhere句のようなもの */
+/* 以下が正解　*/
+
+select 費目, sum (出金額) as 費目ごとの出金額合計
+from 家計簿
+group by 費目
+having sum (出金額) > 0
+
+select 費目, 
+  sum (出金額) as 合計,
+  avg (出金額) as 平均,
+  max (出金額) as 最大,
+  min (出金額) as 最小,
+from 家計簿
+group by 費目
+
+select 選択別リスト
+from テーブル名
+where 条件式
+group by グループ化列名
+having 集計結果に対する条件式
+order by 並び替えの列名
+
